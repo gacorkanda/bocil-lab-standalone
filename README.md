@@ -1,41 +1,42 @@
 # BOCIL LAB — Standalone Rebuild
 
-Generasi baru BOCIL LAB, dibangun tanpa ketergantungan Freebuff/VLY.
+Rebuild BOCIL LAB tanpa Freebuff/VLY.
 
-## Stack
+## Fase 01 — Landing + Dashboard + Missions
 
-- React + Vite + TypeScript
-- Convex backend + database
-- Convex Auth
-- Vercel hosting
+- Landing page responsif dengan terminal sandbox simulasi
+- Auth: guest + email/password melalui Convex Auth
+- Dashboard operative
+- 14 mission records di Convex
+- 12 mission aktif
+- 2 mission CTF dikunci untuk fase berikutnya
+- Submit flag divalidasi di server
+- XP + progress tersimpan per user
+- Ranking dasar berdasarkan XP
 
-## Auth
+## Fase berikutnya
 
-- Guest / Anonymous
-- Email + password
-- Google OAuth
+- Tools sandbox
+- CTF Arena
+- Assets dan fitur tambahan hasil migrasi dari project lama
 
-## Menjalankan lokal
+## Local development
+
+Terminal 1:
 
 ```bash
 npm install
 npx convex dev
 ```
 
-Saat `npx convex dev` pertama kali dijalankan, Convex akan meminta login dan membuat atau memilih project/deployment. Setelah itu jalankan `npm run dev` di terminal lain.
-
-Untuk Google OAuth, isi `AUTH_GOOGLE_ID` dan `AUTH_GOOGLE_SECRET` pada environment Convex deployment sesuai kredensial Google OAuth yang kamu buat.
-
-## Vercel
-
-Vercel menggunakan build command:
+Terminal 2:
 
 ```bash
-npx convex deploy --cmd-url-env-var-name VITE_CONVEX_URL --cmd "npm run build"
+npm run dev
 ```
 
-Set `CONVEX_DEPLOY_KEY` pada Vercel Production setelah deployment production Convex tersedia.
+Buka `http://localhost:5173`.
 
-## Aturan migrasi
+## Penting
 
-Project lama tidak disentuh. Labs, misi, assets, dan UI yang masih ingin dipertahankan akan dipindahkan satu per satu setelah auth, database, deployment, dan regression checks stabil.
+Jangan commit secret Convex, file `.env*`, atau `convex/_generated` ke GitHub. Project lama tetap dibiarkan utuh sebagai sumber migrasi; tidak ada ketergantungan Freebuff/VLY di scaffold ini.

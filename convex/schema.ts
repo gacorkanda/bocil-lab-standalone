@@ -10,4 +10,9 @@ export default defineSchema({
     xp: v.number(),
     level: v.number(),
   }).index("by_user", ["userId"]),
+  missionProgress: defineTable({
+    userId: v.id("users"),
+    missionCode: v.string(),
+    solvedAt: v.number(),
+  }).index("by_user", ["userId"]),
 });

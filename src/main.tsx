@@ -1,84 +1,26 @@
-import React, { StrictMode, useEffect, useState } from "react";
+import React, { StrictMode, useEffect, useMemo, useState } from "react";
 import ReactDOM from "react-dom/client";
 import { ConvexAuthProvider, useAuthActions } from "@convex-dev/auth/react";
-import { ConvexReactClient, useConvexAuth, useQuery } from "convex/react";
+import { ConvexReactClient, useConvexAuth, useMutation, useQuery } from "convex/react";
 import { api } from "../convex/_generated/api";
+import { Compass, Flag, KeyRound, LockKeyhole, LogIn, LogOut, Radar, Shield, TerminalSquare, Trophy, UserRound, Zap } from "lucide-react";
 import "./index.css";
 
 const convexUrl = import.meta.env.VITE_CONVEX_URL as string | undefined;
 if (!convexUrl) throw new Error("VITE_CONVEX_URL belum tersedia. Jalankan npx convex dev terlebih dahulu.");
 const convex = new ConvexReactClient(convexUrl);
 
-function Shell() {
-  const { isLoading, isAuthenticated } = useConvexAuth();
-  const { signIn, signOut } = useAuthActions();
-  const user = useQuery(api.users.currentUser, isAuthenticated ? {} : "skip");
-  const [view, setView] = useState<"home" | "auth">("home");
-  const [mode, setMode] = useState<"signIn" | "signUp">("signIn");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
+type Screen = "landing" | "auth";
+const MODULES = [["Recon & OSINT","Bongkar jejak digital dari log, metadata, dan informasi terbuka.",Radar],["Web Exploitation","Belajar memahami validasi, encoding, dan kesalahan web di sandbox.",TerminalSquare],["Kriptografi","ROT13, binary, base64, sampai hash lemah untuk melatih pola pikir.",KeyRound],["Forensik Digital","Pulihkan file, baca paket, dan cari artefak tersembunyi.",Compass],["Coding & Logic","BFS, dictionary attack, dan puzzle algoritmik untuk otak bocil.",Zap]] as const;
 
-  useEffect(() => {
-    if (isAuthenticated) setView("home");
-  }, [isAuthenticated]);
+function rankFor(xp:number){const ranks=[[0,"Script Kiddie","🐣"],[200,"Byte Beginner","🔧"],[500,"Net Runner","🛰️"],[900,"Cipher Breaker","🔐"],[1400,"Shadow Coder","🕶️"],[2000,"Hacker Bocil Legendary","👑"]] as const;let current=ranks[0],next:(typeof ranks)[number]|null=null;for(let i=0;i<ranks.length;i++)if(xp>=ranks[i][0]){current=ranks[i];next=ranks[i+1]??null;}const pct=next?Math.min(100,Math.round(((xp-current[0])/(next[0]-current[0]))*100)):100;return{current,next,pct};}
 
-  async function handlePassword(event: React.FormEvent) {
-    event.preventDefault();
-    setBusy(true); setError(null);
-    try {
-      const form = new FormData();
-      form.set("email", email);
-      form.set("password", password);
-      form.set("flow", mode);
-      await signIn("password", form);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Autentikasi gagal.");
-    } finally { setBusy(false); }
-  }
+function Landing({goAuth}:{goAuth:()=>void}){const[terminal,setTerminal]=useState<string[]>(["BOCIL LAB // secure sandbox","ketik help untuk daftar perintah",""]);const[cmd,setCmd]=useState("");const run=(value:string)=>{const c=value.trim().toLowerCase();if(!c)return;const out=c==="help"?["help, ls, scan, missions, whoami, clear"]:c==="ls"?["labs/  missions/  terminal/  ctf/  tools/"]:c==="scan"?["sandbox.bocil-lab.local","22/tcp open ssh","80/tcp open http","1337/tcp open lab"]:c==="missions"?["12 misi aktif sekarang • 2 misi CTF segera hadir"]:c==="whoami"?["guest-operative"]:["command not found — coba 'help'"];setTerminal(prev=>c==="clear"?[]:[...prev,`bocil@lab:~$ ${value}`,...out]);setCmd("");};return <div className="site-shell"><header className="topbar"><div className="brand"><span className="brand-mark">▰</span><span>BOCIL LAB</span></div><button className="ghost-btn" onClick={goAuth}><LogIn size={16}/> MASUK LAB</button></header><main><section className="hero"><div className="hero-grid"/><div className="hero-copy"><div className="eyebrow"><Shield size={15}/> INDEPENDENT CYBER LEARNING LAB</div><h1>Belajar cyber.<br/><span>Main aman.</span></h1><p>Lab latihan mandiri untuk recon, web, kriptografi, forensik, dan logika. Semua praktik berjalan di sandbox buatan sendiri.</p><div className="hero-actions"><button className="primary-btn" onClick={goAuth}>MASUK & MULAI <Zap size={17}/></button><a href="#modules" className="secondary-btn">LIHAT MODUL</a></div><div className="hero-stats"><div><strong>12</strong><span>misi aktif</span></div><div><strong>5</strong><span>modul belajar</span></div><div><strong>100%</strong><span>sandbox</span></div></div></div><div className="terminal-card"><div className="terminal-head"><span>lab-console</span><span>● LIVE</span></div><div className="terminal-body">{terminal.map((line,i)=><div className={line.startsWith("bocil@")?"term-line cmd":"term-line"} key={i}>{line||"\u00A0"}</div>)}<div className="term-input"><span>$</span><input value={cmd} onChange={e=>setCmd(e.target.value)} onKeyDown={e=>e.key==="Enter"&&run(cmd)} placeholder="help"/></div></div></div></section><section id="modules" className="section"><div className="section-heading"><div><div className="eyebrow">MISSION TREE</div><h2>Lima modul, satu lab.</h2></div><span className="section-tag">FASE 01</span></div><div className="module-grid">{MODULES.map(([name,desc,Icon],i)=><article className="module-card" key={name}><div className="module-num">MOD-0{i+1}</div><div className="icon-box"><Icon size={22}/></div><h3>{name}</h3><p>{desc}</p></article>)}</div></section><section className="section split"><div><div className="eyebrow">HOW IT WORKS</div><h2>Masuk. Pecahkan. Naik level.</h2><p className="section-copy">Setiap flag yang benar tersimpan ke akunmu. XP dihitung di server Convex, jadi progress tidak bergantung pada browser.</p></div><div className="steps">{[["01","LOGIN","Buat identitas operative"],["02","SOLVE","Pecahkan briefing misi"],["03","SUBMIT","Kirim flag ke server"],["04","LEVEL UP","XP masuk otomatis"]].map(([n,t,d])=><div className="step" key={n}><span>{n}</span><div><strong>{t}</strong><p>{d}</p></div></div>)}</div></section></main><footer>BOCIL LAB — independent rebuild • backend Convex • hosting Vercel</footer></div>}
 
-  async function handleGoogle() {
-    setBusy(true); setError(null);
-    try { await signIn("google"); }
-    catch (err) { setError(err instanceof Error ? err.message : "Google login gagal."); setBusy(false); }
-  }
+function Auth({onBack}:{onBack:()=>void}){const{signIn}=useAuthActions();const[mode,setMode]=useState<"signIn"|"signUp">("signIn");const[email,setEmail]=useState("");const[password,setPassword]=useState("");const[busy,setBusy]=useState(false);const[error,setError]=useState<string|null>(null);const submit=async(e:React.FormEvent)=>{e.preventDefault();setBusy(true);setError(null);try{const f=new FormData();f.set("email",email);f.set("password",password);f.set("flow",mode);await signIn("password",f);}catch(err){setError(err instanceof Error?err.message:"Autentikasi gagal.");setBusy(false);}};const guest=async()=>{setBusy(true);setError(null);try{await signIn("anonymous");}catch(err){setError(err instanceof Error?err.message:"Guest login gagal.");setBusy(false);}};return <div className="auth-page"><div className="auth-orbit"/><div className="auth-card"><button className="back-link" onClick={onBack}>← kembali</button><div className="eyebrow"><LockKeyhole size={15}/> AUTH CORE</div><h1>{mode==="signIn"?"Masuk ke lab":"Buat akun lab"}</h1><p>Gunakan email + password atau masuk sebagai guest untuk mencoba misi.</p><form onSubmit={submit}><label>Email<input type="email" value={email} onChange={e=>setEmail(e.target.value)} autoComplete="email" required/></label><label>Password<input type="password" value={password} onChange={e=>setPassword(e.target.value)} minLength={8} autoComplete={mode==="signIn"?"current-password":"new-password"} required/></label>{error&&<div className="error-box">{error}</div>}<button className="primary-btn wide" disabled={busy}>{busy?"MEMPROSES...":mode==="signIn"?"MASUK":"BUAT AKUN"}</button></form><div className="or">ATAU</div><button className="secondary-btn wide" onClick={guest} disabled={busy}><UserRound size={17}/> MASUK SEBAGAI TAMU</button><button className="switch-link" onClick={()=>{setMode(mode==="signIn"?"signUp":"signIn");setError(null)}}>{mode==="signIn"?"Belum punya akun? Daftar":"Sudah punya akun? Masuk"}</button></div></div>}
 
-  async function handleGuest() {
-    setBusy(true); setError(null);
-    try { await signIn("anonymous"); }
-    catch (err) { setError(err instanceof Error ? err.message : "Guest login gagal."); setBusy(false); }
-  }
+function Dashboard(){const{signOut}=useAuthActions();const user=useQuery(api.users.currentUser);const missions=useQuery(api.lab.missions)??[];const progress=useQuery(api.lab.myProgress)??{solvedCodes:[],totalSolved:0,xp:0};const stats=useQuery(api.lab.labStats)??{operatives:0,flagsCaptured:0,totalXp:0};const submitFlag=useMutation(api.lab.submitFlag);const[selected,setSelected]=useState<string|null>(null);const[flag,setFlag]=useState("");const[message,setMessage]=useState<{tone:string;text:string}|null>(null);const[filter,setFilter]=useState("ALL");const[busy,setBusy]=useState(false);const solved=useMemo(()=>new Set(progress.solvedCodes),[progress.solvedCodes]);const rank=rankFor(progress.xp);const active=missions.filter(m=>m.available);const visible=filter==="ALL"?missions:missions.filter(m=>m.module===filter);const solve=async(code:string)=>{if(!flag.trim())return;setBusy(true);setMessage(null);try{const r=await submitFlag({code,flag});if(r.status==="solved"){setMessage({tone:"ok",text:`${r.message} ${r.echo??""}`});setSelected(null);setFlag("");}else if(r.status==="wrong")setMessage({tone:"err",text:`${r.message} Hint: ${r.hint}`});else setMessage({tone:"info",text:r.message});}catch(err){setMessage({tone:"err",text:err instanceof Error?err.message:"Gagal mengirim flag."});}finally{setBusy(false);}};return <div className="dashboard"><header className="dashbar"><div className="brand"><span className="brand-mark">▰</span><span>BOCIL LAB</span></div><div className="dash-actions"><span className="auth-pill"><UserRound size={14}/> {user?.email??"GUEST"}</span><button className="ghost-btn" onClick={()=>signOut()}><LogOut size={15}/> KELUAR</button></div></header><main className="dash-main"><div className="dash-title"><div><div className="eyebrow"><Trophy size={15}/> OPERATIVE DASHBOARD</div><h1>Siap berburu flag?</h1><p>Pilih misi, baca briefing, pecahkan puzzle, lalu submit flag.</p></div><div className="rank-card"><span>{rank.current[2]}</span><div><strong>{rank.current[1]}</strong><small>{progress.xp} XP{rank.next?` • ${rank.next[0]-progress.xp} menuju ${rank.next[1]}`:" • MAX RANK"}</small></div><div className="rank-bar"><i style={{width:`${rank.pct}%`}}/></div></div></div><div className="stat-grid"><div className="stat"><span>FLAGS</span><strong>{progress.totalSolved}/{active.length}</strong></div><div className="stat"><span>XP</span><strong>{progress.xp}</strong></div><div className="stat"><span>OPERATIVES</span><strong>{stats.operatives}</strong></div><div className="stat"><span>GLOBAL FLAGS</span><strong>{stats.flagsCaptured}</strong></div></div>{message&&<div className={`toast-msg ${message.tone}`}>{message.text}</div>}<div className="filter-row"><div className="eyebrow">MISSION BOARD</div><select value={filter} onChange={e=>setFilter(e.target.value)}><option value="ALL">Semua modul</option>{[...new Set(missions.map(m=>m.module))].map(m=><option key={m} value={m}>{m}</option>)}</select></div><div className="mission-grid">{visible.map(m=>{const done=solved.has(m.code);return <article className={`mission-card ${done?"done":""} ${!m.available?"locked":""}`} key={m.code}><div className="mission-top"><span className="mission-code">{m.code}</span><span className={`diff ${m.difficulty.toLowerCase()}`}>{m.difficulty}</span></div><div className="mission-icon">{!m.available?<LockKeyhole size={20}/>:done?<Flag size={20}/>:<KeyRound size={20}/>}</div><div className="mission-module">{m.module}</div><h3>{m.title}</h3><p>{m.brief}</p><div className="mission-meta"><span>+{m.xp} XP</span><span>{done?"CLEARED":!m.available?"FASE BERIKUTNYA":"FLAG TERKUNCI"}</span></div>{m.available&&!done&&<button className="primary-btn wide" onClick={()=>{setSelected(selected===m.code?null:m.code);setFlag("");setMessage(null)}}>{selected===m.code?"TUTUP":"BUKA MISI"}</button>}{selected===m.code&&!done&&<div className="submit-box"><input value={flag} onChange={e=>setFlag(e.target.value)} onKeyDown={e=>e.key==="Enter"&&solve(m.code)} placeholder="bocil{flagmu}" spellCheck={false}/><button className="primary-btn wide" disabled={busy||!flag.trim()} onClick={()=>solve(m.code)}>{busy?"CEK...":"KIRIM FLAG"}</button></div>}</article>})}</div></main></div>}
 
-  if (isLoading) return <main className="page"><div className="card"><div className="eyebrow">BOCIL LAB</div><p>Menyiapkan koneksi autentikasi...</p></div></main>;
+function App(){const{isLoading,isAuthenticated}=useConvexAuth();const[screen,setScreen]=useState<Screen>("landing");useEffect(()=>{if(!isAuthenticated&&screen!=="landing"&&!isLoading)setScreen("landing");},[isAuthenticated,isLoading,screen]);if(isLoading)return <div className="loading-screen">INITIALIZING BOCIL LAB...</div>;if(isAuthenticated)return <Dashboard/>;return screen==="auth"?<Auth onBack={()=>setScreen("landing")}/>:<Landing goAuth={()=>setScreen("auth")}/>;}
 
-  if (view === "auth" && !isAuthenticated) {
-    return <main className="page"><div className="card">
-      <div className="eyebrow">AUTHENTICATION CORE</div>
-      <h2>Masuk ke BOCIL LAB</h2>
-      <p className="muted">Auth dikelola langsung oleh Convex. Tidak ada editor platform pihak ketiga.</p>
-      <div className="actions"><button className="btn" onClick={handleGoogle} disabled={busy}>Lanjutkan dengan Google</button><button className="btn" onClick={handleGuest} disabled={busy}>Masuk sebagai Tamu</button></div>
-      <div className="sep" />
-      <form onSubmit={handlePassword}>
-        <div className="field"><label>Email</label><input type="email" value={email} onChange={e=>setEmail(e.target.value)} required autoComplete="email" /></div>
-        <div className="field"><label>Password</label><input type="password" value={password} onChange={e=>setPassword(e.target.value)} required minLength={8} autoComplete={mode === "signIn" ? "current-password" : "new-password"} /></div>
-        {error && <div className="error">{error}</div>}
-        <div className="actions"><button className="btn primary" disabled={busy}>{busy ? "Memproses..." : mode === "signIn" ? "Masuk" : "Buat akun"}</button><button type="button" className="btn" onClick={()=>setMode(mode === "signIn" ? "signUp" : "signIn")}>{mode === "signIn" ? "Daftar" : "Sudah punya akun"}</button></div>
-      </form>
-      <button className="btn" style={{marginTop:12,width:"100%"}} onClick={()=>{setView("home");setError(null)}}>Kembali</button>
-    </div></main>;
-  }
-
-  return <>
-    <nav className="nav"><strong>BOCIL LAB</strong>{isAuthenticated && <div className="actions" style={{margin:0}}><span className="badge">AUTH OK</span><button className="btn" onClick={()=>signOut()}>Keluar</button></div>}</nav>
-    <main className="content">
-      <div className="eyebrow">INDEPENDENT CYBER LAB</div>
-      <h1>Bangun ulang.<br/>Mulai bersih.</h1>
-      {isAuthenticated ? <p>Akun aktif{user?.email ? ` sebagai ${user.email}` : " sebagai guest"}. Fondasi BOCIL LAB baru sudah terhubung ke Convex.</p> : <p>Ini fondasi generasi baru BOCIL LAB. Repo, hosting, database, dan autentikasi akan berdiri sendiri tanpa ketergantungan Freebuff.</p>}
-      <div className="actions">{!isAuthenticated && <button className="btn primary" onClick={()=>setView("auth")}>Masuk / Daftar</button>}</div>
-      <div className="grid"><div className="panel"><div className="badge">STEP 01</div><h2>Core</h2><p>React + Vite dengan struktur minimal dan mudah dirawat.</p></div><div className="panel"><div className="badge">STEP 02</div><h2>Backend</h2><p>Convex untuk database, functions, dan autentikasi.</p></div><div className="panel"><div className="badge">STEP 03</div><h2>Labs</h2><p>Semua misi dan tools lama akan dipindahkan setelah fondasi stabil.</p></div></div>
-    </main>
-  </>;
-}
-
-ReactDOM.createRoot(document.getElementById("root")!).render(<StrictMode><ConvexAuthProvider client={convex}><Shell /></ConvexAuthProvider></StrictMode>);
+ReactDOM.createRoot(document.getElementById("root")!).render(<StrictMode><ConvexAuthProvider client={convex}><App/></ConvexAuthProvider></StrictMode>);
