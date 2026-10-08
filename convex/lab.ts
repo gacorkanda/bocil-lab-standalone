@@ -1,6 +1,7 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
+import { syncAchievements } from "./achievements";
 
 type Difficulty = "MUDAH" | "SEDANG" | "SULIT" | "LEGENDARY";
 
@@ -15,6 +16,7 @@ type Mission = {
   hint: string;
   echo: string;
   available: boolean;
+  arenaOnly?: boolean;
 };
 
 /**
@@ -187,9 +189,10 @@ const MISSIONS: Mission[] = [
       "Arena CTF akan memakai kunci baru setiap sesi selama 60 menit. Modul ini akan aktif setelah CTF Arena selesai dibangun.",
     points: 300,
     flag: "bocil{t3mp0ral_key}",
-    hint: "Kuncinya berganti tiap sesi.",
-    echo: "CTF Arena belum diaktifkan di fase ini.",
-    available: false,
+    hint: "Mulai session, decode Stage-1, lalu ambil KEY.",
+    echo: "CTF-01 cleared lewat Arena.",
+    available: true,
+    arenaOnly: true,
   },
   {
     code: "CTF-02",
@@ -199,9 +202,10 @@ const MISSIONS: Mission[] = [
     brief: "Misi legendaris dua tahap akan aktif setelah CTF Arena dibangun.",
     points: 500,
     flag: "bocil{midnight_protocol}",
-    hint: "Stage-1 adalah base64, stage-2 menggunakan seed sesi.",
-    echo: "CTF Arena belum diaktifkan di fase ini.",
-    available: false,
+    hint: "Decode Stage-1 untuk menemukan SECRET_NUMBER.",
+    echo: "CTF-02 cleared lewat Arena.",
+    available: true,
+    arenaOnly: true,
   },
 ];
 
@@ -228,6 +232,7 @@ export const missions = query({
       points: mission.points,
       xp: xpFor(mission),
       available: mission.available,
+      arenaOnly: mission.arenaOnly ?? false,
       flagPreview: `bocil{${"*".repeat(Math.max(8, mission.flag.length - 6))}}`,
     })),
 });
@@ -295,10 +300,10 @@ export const submitFlag = mutation({
       };
     }
 
-    if (!mission.available) {
+    if (!mission.available || mission.arenaOnly) {
       return {
         status: "locked" as const,
-        message: "Misi ini dikunci sementara — CTF Arena masuk pada fase berikutnya.",
+        message: "Misi ini diselesaikan melalui tab CTF Arena.",
       };
     }
 
@@ -329,11 +334,13 @@ export const submitFlag = mutation({
     });
 
     const xp = xpFor(mission);
+    const unlocked = await syncAchievements(ctx, userId);
     return {
       status: "solved" as const,
       message: `FLAG DITERIMA — ${mission.title} cleared! +${xp} XP`,
       echo: mission.echo,
       xpGained: xp,
+      achievementsUnlocked: unlocked,
     };
   },
 });

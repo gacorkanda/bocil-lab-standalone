@@ -40,3 +40,10 @@ Buka `http://localhost:5173`.
 ## Penting
 
 Jangan commit secret Convex, file `.env*`, atau `convex/_generated` ke GitHub. Project lama tetap dibiarkan utuh sebagai sumber migrasi; tidak ada ketergantungan Freebuff/VLY di scaffold ini.
+
+## Phase 02
+
+- Mission board: 14 missions, XP, rank, per-user progress.
+- Tool sandbox: Recon, Vulnerability Scanner, Exploit Simulator, Hash Cracker, Multidecoder.
+- CTF Arena: 60-minute sessions with rotating session keys and two dynamic challenges.
+- Tool targets are restricted to `*.sandbox.bocil-lab.local` for lab safety.
