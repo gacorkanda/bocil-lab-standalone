@@ -1,5 +1,6 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import type { MutationCtx } from "./_generated/server";
+import type { Id } from "./_generated/dataModel";
 import { query } from "./_generated/server";
 
 export const ACHIEVEMENTS = [
@@ -16,7 +17,7 @@ export const ACHIEVEMENTS = [
   { code: "LEGENDARY", title: "Hacker Bocil Legendary", description: "Menyelesaikan CTF-02 dan mencapai level legendaris.", icon: "👑" },
 ] as const;
 
-export async function syncAchievements(ctx: MutationCtx, userId: string) {
+export async function syncAchievements(ctx: MutationCtx, userId: Id<"users">) {
   const progress = await ctx.db
     .query("missionProgress")
     .withIndex("by_user", (q) => q.eq("userId", userId))
@@ -52,7 +53,7 @@ export async function syncAchievements(ctx: MutationCtx, userId: string) {
   for (const achievement of ACHIEVEMENTS) {
     if (earned.has(achievement.code) && !existingCodes.has(achievement.code)) {
       await ctx.db.insert("achievements", {
-        userId: userId,
+        userId,
         code: achievement.code,
         unlockedAt: Date.now(),
       });
